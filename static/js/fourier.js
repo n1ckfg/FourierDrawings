@@ -19,22 +19,17 @@ const Point = class {
 const FourierCircle = class {
     constructor(speed, radius, initial_angle)
     {
-        this.radius = radius/2;
+        this.radius = radius;
         this.speed = speed/20;
         this.initial_angle = initial_angle
     }
+    // Adds this vector to the current path; the caller strokes all vectors at once.
     draw(ctx, at) 
     {
-        ctx.beginPath();
-        //ctx.arc(at.x, at.y, this.radius, 0, Math.PI * 2, true);
         var x = at.x + this.radius * Math.cos(this.initial_angle + 2 * Math.PI * time * this.speed);
         var y = at.y + this.radius * Math.sin(this.initial_angle + 2 * Math.PI * time * this.speed);
         ctx.moveTo(at.x, at.y);
         ctx.lineTo(x, y);
-        ctx.closePath();
-        ctx.strokeStyle = 'rgba(202, 126, 86, 0.7)';
-        ctx.lineWidth = 1; 
-        ctx.stroke();
     }
 
     nextCenter(at) 
@@ -45,35 +40,28 @@ const FourierCircle = class {
     }
 };
 
-let n;
+// Each path has 2 * count - 1 coefficients: c_0, c_1, c_-1, ..., c_(count-1), c_-(count-1).
+let circles_per_path;
 let circles;
 let animation_id = 0;
-let center = new Point(150, 150);
+let origin = new Point(0, 0);
 let wave = [];
 let nr_of_paths;
-let flag = false;
 function init_fourier(canvas_elm, constants, count) {
     canvas = canvas_elm;
     context = canvas.getContext('2d');
-    context.beginPath();
-    context.fillStyle = "rgba(255, 255, 255, 255)";
-    context.fillRect(0, 0, canvas.width, canvas.height);    
-    context.stroke();
-    if(flag==false){
-        context.transform(1, 0, 0, -1, 0, canvas.height);
-        flag=true;
-    }
 
     if(animation_id !== 0)
         window.cancelAnimationFrame(animation_id);
-    n = count;
+    circles_per_path = 2 * count - 1;
+    time = 0;
 
     circles = [];
-    nr_of_paths = constants.length/((count-1)*2+1);
+    nr_of_paths = constants.length / circles_per_path;
+    wave = [];
     for(let i=0;i<nr_of_paths;i++){
         wave.push([]);
     } 
-    //console.log("lenght const"+ constants.length)
 
     for (let i = 0; i < constants.length; i++) {
         let constant = constants[i];
@@ -83,97 +71,44 @@ function init_fourier(canvas_elm, constants, count) {
 }
 
 function draw_wave(ctx,wave,j) {
-    // ctx.beginPath();
     for (let i = 1; i < wave[j].length; i++) {
         ctx.beginPath();
         ctx.moveTo(wave[j][i-1].x, wave[j][i-1].y);
         ctx.lineTo(wave[j][i].x, wave[j][i].y);
-        ctx.closePath();
 
-        // let c = Math.ceil(127.0 + 128.0*i/wave.length);
         let alpha = 1 - i*1.0/wave[j].length;
         
         ctx.strokeStyle = 'rgba(0, 0, 0, ' + alpha + ')';
-        //ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
         ctx.lineWidth = 1;
         ctx.stroke();
     }
-    // ctx.closePath();
-    // ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
-    // ctx.stroke();
 } 
 
-// function draw_wave2(ctx) {
-//     // ctx.beginPath();
-//     for (let i = 1; i < wave2.length; i++) {
-//         ctx.beginPath();
-//         ctx.moveTo(wave2[i-1].x, wave2[i-1].y);
-//         ctx.lineTo(wave2[i].x, wave2[i].y);
-//         ctx.closePath();
-
-//         // let c = Math.ceil(127.0 + 128.0*i/wave.length);
-//         let alpha = 1 - i*1.0/wave2.length;
-        
-//         ctx.strokeStyle = 'rgba(0, 0, 0, ' + alpha + ')';
-//         //ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
-//         ctx.lineWidth = 1;
-//         ctx.stroke();
-//     }
-//     // ctx.closePath();
-//     // ctx.strokeStyle = 'rgba(0, 0, 0, 1)';
-//     // ctx.stroke();
-// } 
-
-
 function draw() {
-    console.log("ia tut ne bil");
     context.clearRect(0,0, canvas.width, canvas.height);
-    // let new_center = center;
-    let count;
-
 
     for(let j=0;j<nr_of_paths;j++){
-        count = 2*n*j-1*j;
-        if(j==0)count=0;
-        //console.log("count for "+j+" count = "+count)
-        //console.log(nr_of_paths)
-        var new_center = circles[count].nextCenter(center);
-        for(let i = 1; i < n; i++) {
-            circles[i+count].draw(context, new_center);
-         new_center = circles[i+count].nextCenter(new_center);
+        let first = j * circles_per_path;
+        // c_0 doesn't rotate: it is the fixed start of this path's chain of vectors.
+        let new_center = circles[first].nextCenter(origin);
+        context.beginPath();
+        for(let i = 1; i < circles_per_path; i++) {
+            circles[first + i].draw(context, new_center);
+            new_center = circles[first + i].nextCenter(new_center);
         }
-          draw_wave(context,wave,j);
-          wave[j].unshift(new_center);
+        context.strokeStyle = 'rgba(202, 126, 86, 0.7)';
+        context.lineWidth = 1;
+        context.stroke();
 
-          if(wave[j].length > 500) {
+        draw_wave(context,wave,j);
+        wave[j].unshift(new_center);
+
+        if(wave[j].length > 500) {
             wave[j].pop();
         }
     }
 
-
-
-
-    
-
-
-    // var new_center = circles[201].nextCenter(center);
-    // for(let i = 1; i < n; i++) {
-    //     circles[i+201].draw(context, new_center);
-    //     new_center = circles[i+201].nextCenter(new_center);
-    // }
-    //   draw_wave(context,wave2);
-    //   wave2.unshift(new_center);
-
-
-    //   console.log(wave);
-    //   console.log(wave2.length);
-        
-        
-    
-    
-
     animation_id = window.requestAnimationFrame(draw);
 
     time += 0.04;
-    
 }

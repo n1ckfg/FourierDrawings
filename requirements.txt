@@ -1,11 +1,6 @@
 Flask
-flask-appconfig
 Flask-Bootstrap
 Flask-WTF
-matplotlib
 numpy
-scipy
-svgpathtools
-svgutils
+svgpathtools>=1.6
 gunicorn
-itsdangerous==2.0.1
