@@ -73,7 +73,7 @@ def convert_fourier_constant_for_js(constant):
 
 def calculate_fourier_for_svg_path(svg_path, count):
     paths, _ = svg2paths(svg_path)
-    return calculate_fourier_for_path(paths[count], count, 600, 600)
+    return calculate_fourier_for_path(None, paths[0], count, 600, 600)
 
 
 def calculate_fourier_for_svg(form,svg_file, count, canvas_width, canvas_height):
